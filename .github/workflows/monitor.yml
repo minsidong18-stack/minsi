@@ -2,7 +2,7 @@ name: Monitor Binance announcements
 
 on:
   schedule:
-    - cron: "2/5 * * * *"
+    - cron: "1/5 * * * *"
   workflow_dispatch:
     inputs:
       send_test_email:
