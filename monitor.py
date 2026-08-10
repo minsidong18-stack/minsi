@@ -77,7 +77,7 @@ def save_seen(codes: list[str]) -> None:
 def send_email(items: list[dict[str, str]], *, test: bool = False) -> None:
     email_address = os.environ.get("QQ_EMAIL", "").strip()
     auth_code = os.environ.get("QQ_AUTH_CODE", "").strip()
-    recipient = os.environ.get("TO_EMAIL", email_address).strip()
+    recipient = os.environ.get("TO_EMAIL", "").strip() or email_address
     if not email_address or not auth_code or not recipient:
         raise RuntimeError("QQ_EMAIL, QQ_AUTH_CODE and TO_EMAIL (optional) must be configured")
 
