@@ -95,9 +95,23 @@ def send_email(items: list[dict[str, str]], *, test: bool = False) -> None:
         message.set_content("\n".join(body))
 
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.qq.com", 465, context=context, timeout=30) as smtp:
-        smtp.login(email_address, auth_code)
-        smtp.send_message(message)
+    try:
+        with smtplib.SMTP_SSL("smtp.qq.com", 465, context=context, timeout=30) as smtp:
+            smtp.login(email_address, auth_code)
+            smtp.send_message(message)
+        return
+    except (smtplib.SMTPException, OSError) as exc:
+        print(f"QQ SMTP port 465 failed ({type(exc).__name__}); trying port 587")
+
+    try:
+        with smtplib.SMTP("smtp.qq.com", 587, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=context)
+            smtp.ehlo()
+            smtp.login(email_address, auth_code)
+            smtp.send_message(message)
+    except (smtplib.SMTPException, OSError) as exc:
+        raise RuntimeError(f"QQ SMTP failed on ports 465 and 587: {exc}") from exc
 
 
 def main() -> int:
