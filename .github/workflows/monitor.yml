@@ -3,10 +3,17 @@ name: Monitor Binance announcements
 on:
   schedule:
     - cron: "1/5 * * * *"
+    # 北京时间每天 20:01 左右发送健康报告（UTC 12:01）。
+    - cron: "1 12 * * *"
   workflow_dispatch:
     inputs:
       send_test_email:
         description: "Send a test email"
+        required: false
+        type: boolean
+        default: false
+      send_health_report:
+        description: "Send a health report"
         required: false
         type: boolean
         default: false
@@ -20,6 +27,9 @@ concurrency:
 
 jobs:
   monitor:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '1/5 * * * *') ||
+      (github.event_name == 'workflow_dispatch' && !inputs.send_health_report)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -52,3 +62,25 @@ jobs:
           git add data/seen.json
           git commit -m "chore: update announcement state"
           git push
+
+  daily-health-report:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '1 12 * * *') ||
+      (github.event_name == 'workflow_dispatch' && inputs.send_health_report)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check sources and send health report
+        env:
+          QQ_EMAIL: ${{ secrets.QQ_EMAIL }}
+          QQ_AUTH_CODE: ${{ secrets.QQ_AUTH_CODE }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: python health_mailer.py
